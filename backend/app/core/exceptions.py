@@ -55,3 +55,13 @@ class CorruptedPDFError(PDFProcessingError):
 
 class NoExtractableTextError(PDFProcessingError):
     """The PDF opened fine but contains no usable text (blank or scanned)."""
+
+
+class LLMProviderError(AppError):
+    """The configured LLM provider failed or returned something unusable."""
+
+    status_code = 502
+
+
+class LLMResponseValidationError(LLMProviderError):
+    """The provider's response could not be parsed into the expected schema."""

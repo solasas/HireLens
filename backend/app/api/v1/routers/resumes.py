@@ -2,9 +2,12 @@ import logging
 
 from fastapi import APIRouter, File, UploadFile, status
 
+from app.api.deps import LLMProviderDep
 from app.core.exceptions import FileTooLargeError
 from app.schemas.resume import ParsedResumePreview
+from app.schemas.resume_extraction import ResumeExtraction
 from app.services.pdf_parser import MAX_FILE_SIZE_BYTES, parse_resume_pdf
+from app.services.resume_extraction_service import extract_resume
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/resumes", tags=["resumes"])
@@ -30,6 +33,20 @@ async def parse_resume(file: UploadFile = File(...)) -> ParsedResumePreview:
         character_count=parsed.character_count,
         text=parsed.text,
     )
+
+
+@router.post("/extract", response_model=ResumeExtraction, status_code=status.HTTP_200_OK)
+async def extract_resume_route(llm: LLMProviderDep, file: UploadFile = File(...)) -> ResumeExtraction:
+    """Parse an uploaded resume PDF and run structured LLM extraction over it.
+
+    Still no persistence — this proves the parse-then-extract pipeline
+    end to end. Full ingestion (this plus a candidate/resume record and
+    a stored resume_profile) is a later endpoint.
+    """
+    file_bytes = await _read_bounded(file, MAX_FILE_SIZE_BYTES)
+    filename = file.filename or "upload.pdf"
+    parsed = parse_resume_pdf(file_bytes, filename=filename)
+    return await extract_resume(parsed.text, llm=llm)
 
 
 async def _read_bounded(file: UploadFile, max_bytes: int) -> bytes:

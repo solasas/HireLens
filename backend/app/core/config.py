@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     llm_provider: Literal["openai", "gemini"] = "openai"
     openai_api_key: str | None = None
     gemini_api_key: str | None = None
+    gemini_model: str = "gemini-3.6-flash"
 
     embedding_provider: Literal["openai", "gemini"] = "openai"
 
