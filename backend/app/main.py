@@ -46,10 +46,7 @@ def create_app() -> FastAPI:
     @application.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError) -> JSONResponse:
         logger.error("Application error on %s: %s", request.url.path, exc.message)
-        return JSONResponse(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={"detail": exc.message},
-        )
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
     @application.exception_handler(Exception)
     async def handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
