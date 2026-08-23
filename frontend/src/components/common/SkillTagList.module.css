@@ -1,0 +1,36 @@
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  border: 1px solid transparent;
+}
+
+.matched {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.missing {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.neutral {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-faint);
+  font-size: 0.85rem;
+}

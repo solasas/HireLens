@@ -1,3 +1,7 @@
+import uuid
+from datetime import datetime
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -10,3 +14,28 @@ class JobDescriptionInput(BaseModel):
         if not value.strip():
             raise ValueError("Job description text cannot be blank.")
         return value
+
+
+class JobCreateResponse(BaseModel):
+    job_id: uuid.UUID
+    job_title: str
+
+
+class EvaluateCandidatesResponse(BaseModel):
+    job_id: uuid.UUID
+    evaluation_ids: list[uuid.UUID]
+
+
+class JobSummary(BaseModel):
+    job_id: uuid.UUID
+    title: str
+    candidate_count: int
+    created_at: datetime
+
+
+class JobDetail(BaseModel):
+    job_id: uuid.UUID
+    title: str
+    raw_text: str
+    structured_data: dict[str, Any]
+    created_at: datetime

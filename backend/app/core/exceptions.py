@@ -71,3 +71,9 @@ class EmbeddingProviderError(AppError):
     """The configured embedding provider failed or returned something unusable."""
 
     status_code = 502
+
+
+class NotFoundError(AppError):
+    """A referenced resource (job, candidate, ...) doesn't exist."""
+
+    status_code = 404

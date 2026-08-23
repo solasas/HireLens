@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, File, UploadFile, status
 
 from app.api.deps import LLMProviderDep
-from app.core.exceptions import FileTooLargeError
+from app.api.upload import read_bounded
 from app.schemas.resume import ParsedResumePreview
 from app.schemas.resume_extraction import ResumeExtraction
 from app.services.pdf_parser import MAX_FILE_SIZE_BYTES, parse_resume_pdf
@@ -11,8 +11,6 @@ from app.services.resume_extraction_service import extract_resume
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/resumes", tags=["resumes"])
-
-_READ_CHUNK_SIZE = 1024 * 1024  # 1 MB
 
 
 @router.post("/parse", response_model=ParsedResumePreview, status_code=status.HTTP_200_OK)
@@ -24,7 +22,7 @@ async def parse_resume(file: UploadFile = File(...)) -> ParsedResumePreview:
     extraction + persistence) is a later endpoint that calls the same
     pdf_parser service internally, plus a repository and an LLM provider.
     """
-    file_bytes = await _read_bounded(file, MAX_FILE_SIZE_BYTES)
+    file_bytes = await read_bounded(file, MAX_FILE_SIZE_BYTES)
     filename = file.filename or "upload.pdf"
     parsed = parse_resume_pdf(file_bytes, filename=filename)
     return ParsedResumePreview(
@@ -41,24 +39,9 @@ async def extract_resume_route(llm: LLMProviderDep, file: UploadFile = File(...)
 
     Still no persistence — this proves the parse-then-extract pipeline
     end to end. Full ingestion (this plus a candidate/resume record and
-    a stored resume_profile) is a later endpoint.
+    a stored resume_profile) happens as part of POST /jobs/{job_id}/candidates.
     """
-    file_bytes = await _read_bounded(file, MAX_FILE_SIZE_BYTES)
+    file_bytes = await read_bounded(file, MAX_FILE_SIZE_BYTES)
     filename = file.filename or "upload.pdf"
     parsed = parse_resume_pdf(file_bytes, filename=filename)
     return await extract_resume(parsed.text, llm=llm)
-
-
-async def _read_bounded(file: UploadFile, max_bytes: int) -> bytes:
-    """Read the upload in chunks, failing as soon as it exceeds the limit
-    instead of buffering an arbitrarily large body in memory first."""
-    chunks: list[bytes] = []
-    total = 0
-    while chunk := await file.read(_READ_CHUNK_SIZE):
-        total += len(chunk)
-        if total > max_bytes:
-            raise FileTooLargeError(
-                f"File exceeds the {max_bytes // (1024 * 1024)} MB upload limit."
-            )
-        chunks.append(chunk)
-    return b"".join(chunks)

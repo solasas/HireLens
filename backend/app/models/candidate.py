@@ -13,7 +13,13 @@ class Candidate(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    # Nullable: extraction can't always find an email on a resume, and
+    # fabricating a placeholder to satisfy NOT NULL would be worse than
+    # just not deduping that candidate. Postgres treats NULL as distinct
+    # from every other NULL in a unique index, so this doesn't weaken
+    # the case-insensitive uniqueness guarantee below for candidates
+    # that *do* have an email.
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     resumes: Mapped[list["Resume"]] = relationship(

@@ -1,0 +1,33 @@
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.label {
+  color: var(--color-text);
+}
+
+.percent {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 999px;
+}
