@@ -81,6 +81,8 @@ for the role.
 │   ├── alembic/versions/       # migrations
 │   └── tests/                  # pytest — unit tests (fakes) + DB integration tests
 └── frontend/
+    ├── Dockerfile              # dev server, used by docker-compose
+    ├── Dockerfile.prod         # static production build, used for deployment
     └── src/
         ├── api/                # axios client + per-resource request functions
         ├── components/         # reusable UI (common/, upload/, evaluation/, layout/)
@@ -157,6 +159,51 @@ The frontend reads `VITE_API_BASE_URL` from its own `.env` (see
 `frontend/.env.example`).
 
 No secrets are hardcoded anywhere in the codebase; `.env` is gitignored.
+
+## Deployment
+
+Both services are plain Docker images with no platform-specific code, so
+any host that runs Docker containers plus a Postgres database works.
+[Railway](https://railway.app) is the least setup for this shape (backend +
+frontend + Postgres, all from GitHub); Render and Fly.io are equivalent
+alternatives.
+
+Two things exist purely for production and aren't used by
+`docker compose`:
+- `backend/Dockerfile` binds to `$PORT` (falls back to `8000`) and runs
+  `alembic upgrade head` before starting `uvicorn`, so a deploy is never
+  left on a stale schema.
+- `frontend/Dockerfile.prod` builds the static Vite bundle and serves it
+  with `serve -s` (SPA fallback for `react-router`'s `BrowserRouter`) on
+  `$PORT`. The regular `frontend/Dockerfile` runs the Vite dev server and
+  is only meant for local Compose use.
+
+Railway steps:
+
+1. **New Project → Provision PostgreSQL** (from the template gallery) —
+   creates a `Postgres` service exposing `PGHOST` / `PGPORT` / `PGUSER` /
+   `PGPASSWORD` / `PGDATABASE`.
+2. **Backend service**: `+ New → GitHub Repo` → this repo → Settings →
+   Source → **Root Directory = `backend`** (Dockerfile auto-detected).
+   Variables:
+   - `POSTGRES_USER=${{Postgres.PGUSER}}`,
+     `POSTGRES_PASSWORD=${{Postgres.PGPASSWORD}}`,
+     `POSTGRES_HOST=${{Postgres.PGHOST}}`,
+     `POSTGRES_PORT=${{Postgres.PGPORT}}`,
+     `POSTGRES_DB=${{Postgres.PGDATABASE}}`
+   - `LLM_PROVIDER=gemini`, `EMBEDDING_PROVIDER=gemini`,
+     `GEMINI_API_KEY=<real key>`
+   - `ENVIRONMENT=production`, `LOG_LEVEL=INFO`
+   - Settings → Networking → **Generate Domain**, note the URL.
+3. **Frontend service**: `+ New → GitHub Repo` → this repo → Root
+   Directory = `frontend` → Settings → Build → **Dockerfile Path =
+   `Dockerfile.prod`**. Variables: `VITE_API_BASE_URL=https://<backend
+   domain>/api/v1` (baked in at build time). Networking → Generate
+   Domain.
+4. Back on the backend service, set
+   `CORS_ORIGINS=https://<frontend domain>` and let it redeploy.
+5. Verify `https://<backend domain>/docs` and the frontend domain both
+   load.
 
 ## API overview
 
