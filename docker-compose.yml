@@ -36,5 +36,21 @@ services:
     volumes:
       - ./backend:/app
 
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      # The browser runs on the host, not inside the compose network, so
+      # this must be the host-published backend port — "backend:8000"
+      # (the docker-network name) would not resolve from the browser.
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
 volumes:
   db_data:
