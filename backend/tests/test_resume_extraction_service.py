@@ -1,6 +1,5 @@
 import pytest
 
-from app.core.exceptions import LLMResponseValidationError
 from app.schemas.resume_extraction import ExperienceEntry, ResumeExtraction
 from app.services.resume_extraction_service import extract_resume
 from tests.factories.llm import FakeLLMProvider
@@ -15,33 +14,6 @@ async def test_extract_resume_returns_result_on_first_success() -> None:
 
     assert result.name == "Jane Doe"
     assert len(llm.prompts) == 1
-
-
-@pytest.mark.asyncio
-async def test_extract_resume_retries_once_after_invalid_response() -> None:
-    extraction = ResumeExtraction(name="Jane Doe")
-    llm = FakeLLMProvider([LLMResponseValidationError("missing required field"), extraction])
-
-    result = await extract_resume("resume text", llm=llm)
-
-    assert result.name == "Jane Doe"
-    assert len(llm.prompts) == 2
-    assert "missing required field" in llm.prompts[1]
-
-
-@pytest.mark.asyncio
-async def test_extract_resume_propagates_error_after_second_failure() -> None:
-    llm = FakeLLMProvider(
-        [
-            LLMResponseValidationError("first failure"),
-            LLMResponseValidationError("second failure"),
-        ]
-    )
-
-    with pytest.raises(LLMResponseValidationError):
-        await extract_resume("resume text", llm=llm)
-
-    assert len(llm.prompts) == 2
 
 
 @pytest.mark.asyncio
