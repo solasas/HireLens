@@ -1,0 +1,32 @@
+# Production image: builds static assets, then serves them with a
+# lightweight static server (not the Vite dev server used by Dockerfile,
+# which is unsuitable for production).
+FROM node:20-slim AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+# Vite inlines VITE_* variables into the bundle at build time, so the
+# backend's public URL must be known as a build arg, not a runtime env var.
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+RUN npm run build
+
+FROM node:20-slim
+
+WORKDIR /app
+
+RUN npm install -g serve
+
+COPY --from=build /app/dist ./dist
+
+EXPOSE 4173
+
+# -s enables SPA fallback (all routes serve index.html) since the app uses
+# react-router's BrowserRouter. $PORT is injected by platforms like Railway.
+CMD ["sh", "-c", "serve -s dist -l ${PORT:-4173}"]

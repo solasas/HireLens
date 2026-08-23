@@ -106,10 +106,11 @@ In `.env`:
 - `POSTGRES_PASSWORD` should be changed from the placeholder.
 
 ```bash
-docker compose up -d db
-docker compose run --rm backend alembic upgrade head
-docker compose up -d backend frontend
+docker compose up -d db backend frontend
 ```
+
+Migrations run automatically on backend startup (`alembic upgrade head` runs
+before `uvicorn`), so there's no separate migration step.
 
 - Frontend: <http://localhost:5173>
 - Backend API: <http://localhost:8000/api/v1> (health check at `/health`)
