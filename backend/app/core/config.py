@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.6-flash"
 
     embedding_provider: Literal["openai", "gemini"] = "openai"
+    gemini_embedding_model: str = "gemini-embedding-2"
 
     @property
     def cors_origins(self) -> list[str]:

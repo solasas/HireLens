@@ -65,3 +65,9 @@ class LLMProviderError(AppError):
 
 class LLMResponseValidationError(LLMProviderError):
     """The provider's response could not be parsed into the expected schema."""
+
+
+class EmbeddingProviderError(AppError):
+    """The configured embedding provider failed or returned something unusable."""
+
+    status_code = 502
