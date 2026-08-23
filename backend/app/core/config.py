@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     environment: Literal["development", "test", "production"] = "development"
     log_level: str = "INFO"
     app_version: str = "0.1.0"
-    project_name: str = "Smart Resume Screener"
+    project_name: str = "HireLens"
     api_v1_prefix: str = "/api/v1"
 
     # Comma-separated in the environment (e.g. "http://localhost:5173,http://foo").

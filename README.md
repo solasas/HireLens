@@ -1,4 +1,4 @@
-# Smart Resume Screener
+# HireLens
 
 An AI-powered resume screening system. Candidate resumes (PDF) and a job
 description are submitted; the system extracts structured data from both
