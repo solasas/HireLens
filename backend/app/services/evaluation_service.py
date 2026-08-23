@@ -17,7 +17,10 @@ from app.schemas.job_extraction import JobExtraction
 from app.schemas.resume_extraction import ResumeExtraction
 from app.services.llm.base import LLMProvider
 from app.services.llm.extraction import extract_with_retry
-from app.services.llm.prompts.candidate_evaluation import build_candidate_evaluation_prompt
+from app.services.llm.prompts.candidate_evaluation import (
+    SYSTEM_INSTRUCTIONS,
+    build_candidate_evaluation_prompt,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +88,12 @@ async def evaluate_candidate(
         matching_results_json=json.dumps(_matching_results_dict(match)),
     )
 
-    narrative = await extract_with_retry(llm, prompt, CandidateEvaluationNarrative)
+    narrative = await extract_with_retry(
+        llm,
+        system_instruction=SYSTEM_INSTRUCTIONS,
+        prompt=prompt,
+        schema=CandidateEvaluationNarrative,
+    )
 
     score = _score_from_match(match)
     return CandidateEvaluation(

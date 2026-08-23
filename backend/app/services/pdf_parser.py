@@ -16,10 +16,12 @@ import pymupdf
 from app.core.exceptions import (
     CorruptedPDFError,
     EmptyFileError,
+    ExtractedTextTooLargeError,
     FileTooLargeError,
     InvalidFileTypeError,
     NoExtractableTextError,
 )
+from app.services.text_sanitization import strip_control_characters
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,13 @@ MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 # usable content (blank page, watermark-only, or scanned image) rather
 # than trust a stray page number or header as "extracted text".
 MIN_EXTRACTABLE_CHARACTERS = 20
+
+# Above this many characters, reject outright rather than silently
+# truncate — bounds LLM token cost per resume and limits how much
+# untrusted content a single upload can carry into a prompt. A generous
+# multiple of what a real multi-page resume produces; a PDF that exceeds
+# it is either not a resume or is deliberately padded.
+MAX_EXTRACTED_TEXT_CHARS = 15_000
 
 _WHITESPACE_RUN = re.compile(r"[ \t]+")
 _SPACE_AROUND_NEWLINE = re.compile(r" *\n *")
@@ -71,6 +80,12 @@ def parse_resume_pdf(file_bytes: bytes, filename: str) -> ParsedResume:
 
     if len(_NON_ALNUM.sub("", normalized_text)) < MIN_EXTRACTABLE_CHARACTERS:
         raise _no_extractable_text_error(filename, len(page_texts), has_images)
+
+    if len(normalized_text) > MAX_EXTRACTED_TEXT_CHARS:
+        raise ExtractedTextTooLargeError(
+            f"Extracted resume text exceeds the {MAX_EXTRACTED_TEXT_CHARS:,} "
+            "character limit supported for a single resume."
+        )
 
     return ParsedResume(
         text=normalized_text,
@@ -132,7 +147,15 @@ def _normalize_whitespace(text: str) -> str:
     line, but deliberately keeps single line breaks — resumes are full of
     meaningful short lines (skills, bullet points, dates) that a naive
     "join everything into one paragraph" normalization would destroy.
+
+    Also strips control/format characters (see text_sanitization) here,
+    at the point of ingestion — not just later, right before an LLM call.
+    A PDF's embedded text can legally contain arbitrary Unicode, and
+    resume text ends up stored as raw_text and eventually in prompts;
+    cleaning it once at the source means every downstream consumer gets
+    already-sanitized text instead of each one needing to remember to.
     """
+    text = strip_control_characters(text)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = _WHITESPACE_RUN.sub(" ", text)
     text = _SPACE_AROUND_NEWLINE.sub("\n", text)

@@ -15,9 +15,13 @@ from app.services.llm.base import LLMProvider, SchemaT
 logger = logging.getLogger(__name__)
 
 
-async def extract_with_retry(llm: LLMProvider, prompt: str, schema: type[SchemaT]) -> SchemaT:
+async def extract_with_retry(
+    llm: LLMProvider, *, system_instruction: str, prompt: str, schema: type[SchemaT]
+) -> SchemaT:
     try:
-        return await llm.extract_structured(prompt=prompt, schema=schema)
+        return await llm.extract_structured(
+            system_instruction=system_instruction, prompt=prompt, schema=schema
+        )
     except LLMResponseValidationError as exc:
         logger.warning(
             "%s extraction failed validation, retrying once: %s", schema.__name__, exc.message
@@ -26,4 +30,6 @@ async def extract_with_retry(llm: LLMProvider, prompt: str, schema: type[SchemaT
             f"{prompt}\n\nYour previous response was invalid: {exc.message}\n"
             "Return valid JSON matching the required schema exactly."
         )
-        return await llm.extract_structured(prompt=retry_prompt, schema=schema)
+        return await llm.extract_structured(
+            system_instruction=system_instruction, prompt=retry_prompt, schema=schema
+        )

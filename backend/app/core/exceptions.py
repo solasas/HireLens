@@ -57,6 +57,16 @@ class NoExtractableTextError(PDFProcessingError):
     """The PDF opened fine but contains no usable text (blank or scanned)."""
 
 
+class ExtractedTextTooLargeError(PDFProcessingError):
+    """The PDF's extracted text exceeds the supported length. Rejected
+    outright rather than silently truncated — bounds LLM token cost and
+    limits how much untrusted content a single resume can carry into a
+    prompt; a truncation could also cut mid-sentence in a way that
+    changes meaning without anyone noticing."""
+
+    status_code = 413
+
+
 class LLMProviderError(AppError):
     """The configured LLM provider failed or returned something unusable."""
 

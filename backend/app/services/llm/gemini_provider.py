@@ -18,12 +18,15 @@ class GeminiProvider:
         self._client = genai.Client(api_key=api_key)
         self.model_name = model_name
 
-    async def extract_structured(self, *, prompt: str, schema: type[SchemaT]) -> SchemaT:
+    async def extract_structured(
+        self, *, system_instruction: str, prompt: str, schema: type[SchemaT]
+    ) -> SchemaT:
         try:
             response = await self._client.aio.models.generate_content(
                 model=self.model_name,
                 contents=prompt,
                 config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
                     response_mime_type="application/json",
                     response_schema=schema,
                     temperature=0,

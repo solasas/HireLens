@@ -2,6 +2,7 @@ import pytest
 
 from app.core.exceptions import (
     EmptyFileError,
+    ExtractedTextTooLargeError,
     FileTooLargeError,
     InvalidFileTypeError,
     NoExtractableTextError,
@@ -78,6 +79,27 @@ def test_file_over_size_limit_raises_file_too_large_error(monkeypatch: pytest.Mo
 
     with pytest.raises(FileTooLargeError):
         parse_resume_pdf(oversized_bytes, filename="resume.pdf")
+
+
+def test_extracted_text_over_limit_is_rejected_not_truncated(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Same boundary-check-via-monkeypatch pattern as the file-size test —
+    # tests the real limit logic without needing an enormous fixture.
+    monkeypatch.setattr(pdf_parser, "MAX_EXTRACTED_TEXT_CHARS", 50)
+    pdf_bytes = make_text_pdf(["This line of resume text is long enough to exceed the limit."])
+
+    with pytest.raises(ExtractedTextTooLargeError):
+        parse_resume_pdf(pdf_bytes, filename="resume.pdf")
+
+
+def test_control_characters_are_stripped_from_extracted_text() -> None:
+    pdf_bytes = make_text_pdf(["Jane Doe\x00\x07 Software Engineer"])
+
+    result = parse_resume_pdf(pdf_bytes, filename="resume.pdf")
+
+    assert "\x00" not in result.text
+    assert "\x07" not in result.text
 
 
 def test_normalize_whitespace_collapses_runs_and_blank_lines() -> None:
