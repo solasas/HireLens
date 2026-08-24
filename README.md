@@ -164,9 +164,6 @@ No secrets are hardcoded anywhere in the codebase; `.env` is gitignored.
 
 Both services are plain Docker images with no platform-specific code, so
 any host that runs Docker containers plus a Postgres database works.
-[Railway](https://railway.app) is the least setup for this shape (backend +
-frontend + Postgres, all from GitHub); Render and Fly.io are equivalent
-alternatives.
 
 Two things exist purely for production and aren't used by
 `docker compose`:
@@ -176,9 +173,47 @@ Two things exist purely for production and aren't used by
 - `frontend/Dockerfile.prod` builds the static Vite bundle and serves it
   with `serve -s` (SPA fallback for `react-router`'s `BrowserRouter`) on
   `$PORT`. The regular `frontend/Dockerfile` runs the Vite dev server and
-  is only meant for local Compose use.
+  is only meant for local Compose use. (Not used on Vercel — see below,
+  it builds the frontend natively instead of via Docker.)
 
-Railway steps:
+A managed Postgres (Neon, Supabase, Render's own) requires TLS; set
+`POSTGRES_REQUIRE_SSL=true` alongside the connection variables so both
+the app (asyncpg) and Alembic (psycopg) connect over SSL. Local/Compose
+Postgres doesn't speak TLS, so this must stay `false`/unset there.
+
+### Free option: Render + Neon + Vercel
+
+No paid tier required on any of the three.
+
+1. **[Neon](https://neon.tech)** → New Project → create a database. Copy
+   the connection details (host, user, password, database name) from the
+   connection string it gives you.
+2. **Render** → New → Web Service → connect this repo → **Root Directory
+   = `backend`** (Dockerfile auto-detected). Environment variables:
+   - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`,
+     `POSTGRES_DB` from Neon; `POSTGRES_PORT=5432`; `POSTGRES_REQUIRE_SSL=true`
+   - `LLM_PROVIDER=gemini`, `EMBEDDING_PROVIDER=gemini`,
+     `GEMINI_API_KEY=<real key>`
+   - `ENVIRONMENT=production`, `LOG_LEVEL=INFO`
+   - Render assigns a free `onrender.com` domain automatically — note it.
+   - Free-tier services sleep after 15 minutes idle; the first request
+     after that takes ~30s to wake up.
+3. **Vercel** → New Project → import this repo → **Root Directory =
+   `frontend`** → Framework Preset: Vite (build command `npm run build`,
+   output `dist` — Vercel detects these automatically). Environment
+   variable: `VITE_API_BASE_URL=https://<render domain>/api/v1` (baked in
+   at build time, so redeploy after changing it). `frontend/vercel.json`
+   handles the SPA rewrite for `react-router`.
+4. Back on Render, set `CORS_ORIGINS=https://<vercel domain>` and let it
+   redeploy.
+5. Verify `https://<render domain>/docs` and the Vercel domain both load.
+
+### Paid option: Railway
+
+[Railway](https://railway.app) (~$5/month usage-based, no free tier) is
+the least setup for this shape — backend, frontend, and Postgres all from
+one GitHub-connected dashboard, no juggling three providers or a sleeping
+free tier.
 
 1. **New Project → Provision PostgreSQL** (from the template gallery) —
    creates a `Postgres` service exposing `PGHOST` / `PGPORT` / `PGUSER` /

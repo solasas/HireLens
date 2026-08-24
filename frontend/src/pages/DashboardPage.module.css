@@ -1,3 +1,51 @@
+.subtitle {
+  color: var(--color-text-muted);
+  margin-top: -0.3rem;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1.5rem;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.stepNumber {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--gradient-accent);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+.stepTitle {
+  margin: 0;
+}
+
+.stepDesc {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.87rem;
+}
+
+.stepDesc a {
+  font-weight: 600;
+}
+
 .statGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -26,9 +74,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.75rem 0.1rem;
+  padding: 0.75rem 0.6rem;
+  margin: 0 -0.6rem;
+  border-radius: var(--radius-sm);
   text-decoration: none;
   color: inherit;
+}
+
+.recentLink:hover {
+  background: var(--color-bg-alt);
 }
 
 .candidateName {

@@ -9,7 +9,9 @@ const LINKS = [
 export function NavBar() {
   return (
     <header className={styles.header}>
-      <div className={styles.brand}>HireLens</div>
+      <NavLink to="/" className={styles.brand}>
+        HireLens
+      </NavLink>
       <nav className={styles.nav}>
         {LINKS.map((link) => (
           <NavLink

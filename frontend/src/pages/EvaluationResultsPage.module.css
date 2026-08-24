@@ -19,9 +19,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.75rem 0.1rem;
+  padding: 0.75rem 0.6rem;
+  margin: 0 -0.6rem;
+  border-radius: var(--radius-sm);
   text-decoration: none;
   color: inherit;
+}
+
+.link:hover {
+  background: var(--color-bg-alt);
 }
 
 .name {

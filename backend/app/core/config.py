@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_db: str
+    # Managed providers (Neon, Supabase, etc.) require TLS; local/Compose
+    # Postgres does not speak it at all, so this must stay opt-in.
+    postgres_require_ssl: bool = False
     db_echo: bool = False
 
     llm_provider: Literal["openai", "gemini"] = "openai"
@@ -48,18 +51,21 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Async connection string, used by the running application (asyncpg)."""
-        return (
+        url = (
             f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
+        # asyncpg takes an "ssl" connect arg, not libpq's "sslmode"
+        return f"{url}?ssl=true" if self.postgres_require_ssl else url
 
     @property
     def database_url_sync(self) -> str:
         """Sync connection string, used only by Alembic migrations (psycopg)."""
-        return (
+        url = (
             f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
+        return f"{url}?sslmode=require" if self.postgres_require_ssl else url
 
 
 @lru_cache

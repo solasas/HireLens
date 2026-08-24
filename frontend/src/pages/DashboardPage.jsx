@@ -16,6 +16,35 @@ export function DashboardPage() {
   return (
     <div>
       <h1>Dashboard</h1>
+      <p className={styles.subtitle}>Score resumes against a job description in three steps.</p>
+
+      <Card>
+        <ol className={styles.steps}>
+          <li className={styles.step}>
+            <span className={styles.stepNumber}>1</span>
+            <h3 className={styles.stepTitle}>Add a job description</h3>
+            <p className={styles.stepDesc}>
+              Paste the role's requirements on the{" "}
+              <Link to="/jobs">Job Descriptions</Link> page.
+            </p>
+          </li>
+          <li className={styles.step}>
+            <span className={styles.stepNumber}>2</span>
+            <h3 className={styles.stepTitle}>Upload resumes</h3>
+            <p className={styles.stepDesc}>
+              Drop in one or more candidate resumes for that job.
+            </p>
+          </li>
+          <li className={styles.step}>
+            <span className={styles.stepNumber}>3</span>
+            <h3 className={styles.stepTitle}>Review the scoring</h3>
+            <p className={styles.stepDesc}>
+              Get an AI-generated fit score, matched/missing skills, and a ranked
+              candidate list.
+            </p>
+          </li>
+        </ol>
+      </Card>
 
       {isLoading && <LoadingState label="Loading dashboard…" />}
       {!isLoading && error && <ErrorState message={error} onRetry={refetch} />}

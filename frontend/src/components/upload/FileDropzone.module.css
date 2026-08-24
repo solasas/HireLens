@@ -2,22 +2,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.25rem 1.5rem;
-  border: 1.5px dashed var(--color-border);
+  padding: 2.5rem 1.5rem;
+  border: 1.5px dashed var(--color-border-strong);
   border-radius: var(--radius);
-  background: var(--color-bg);
+  background: var(--color-bg-alt);
   cursor: pointer;
   text-align: center;
+}
+
+.dropzone:hover {
+  border-color: var(--color-accent-light);
+  background: var(--color-accent-soft);
 }
 
 .dropzone.active {
   border-color: var(--color-accent);
   background: var(--color-accent-soft);
+  box-shadow: 0 0 0 4px rgba(91, 91, 245, 0.1);
 }
 
 .dropzone.disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.dropzone.disabled:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-alt);
 }
 
 .instructions {
@@ -42,10 +53,10 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.55rem 0.85rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   font-size: 0.85rem;
 }
 
@@ -80,13 +91,13 @@
 .progressTrack {
   height: 8px;
   border-radius: 999px;
-  background: var(--color-border);
+  background: var(--color-bg-alt);
   overflow: hidden;
 }
 
 .progressFill {
   height: 100%;
-  background: var(--color-accent);
+  background: var(--gradient-accent);
   border-radius: 999px;
   transition: width 0.2s ease;
 }
