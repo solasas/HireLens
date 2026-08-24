@@ -6,6 +6,22 @@ with an LLM, scores each candidate against the job with a deterministic
 matching engine, generates an explainable evaluation, and ranks candidates
 for the role.
 
+## Contents
+
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Architecture](#architecture)
+- [Project structure](#project-structure)
+- [Quick start (Docker Compose)](#quick-start-docker-compose)
+- [Running without Docker](#running-without-docker)
+- [Environment variables](#environment-variables)
+- [Deployment](#deployment)
+- [API overview](#api-overview)
+- [Database schema](#database-schema)
+- [Security](#security)
+- [Testing](#testing)
+- [Known limitations](#known-limitations)
+
 ## Features
 
 - **PDF resume parsing** — text extraction with layout-aware reading order,
@@ -58,6 +74,103 @@ for the role.
 | Frontend | React 18, Vite, Axios, React Router |
 | Containerization | Docker, Docker Compose |
 | Testing | pytest, pytest-asyncio (unit tests use fakes; DB-dependent tests run against real Postgres) |
+
+## Architecture
+
+### System overview
+
+Three deployable pieces: a React SPA, a stateless FastAPI service, and a
+Postgres database. The backend is the only piece that talks to Postgres or
+to the LLM/embedding provider — the frontend never calls Gemini directly.
+
+```mermaid
+flowchart LR
+    subgraph Client
+        FE["React SPA (Vite)"]
+    end
+
+    subgraph Backend["FastAPI backend"]
+        API["API routers\n(HTTP boundary)"]
+        SVC["Services\n(orchestration)"]
+        DOM["Domain: scoring engine\n(pure, deterministic, no I/O)"]
+        REPO["Repositories\n(only layer that queries the DB)"]
+    end
+
+    DB[(PostgreSQL)]
+    LLM["Gemini — LLM provider\n(structured extraction + narrative)"]
+    EMB["Gemini — embedding provider\n(semantic similarity)"]
+
+    FE -- "REST / JSON (axios)" --> API
+    API --> SVC
+    SVC --> DOM
+    SVC --> REPO
+    REPO --> DB
+    SVC -- "system_instruction + prompt" --> LLM
+    SVC --> EMB
+```
+
+Dependency direction is one-way: routers depend on services, services
+depend on the domain and repository layers, and the domain scoring engine
+depends on nothing — it's plain, synchronous, unit-testable code with no
+network or database calls. This is what makes the deterministic score
+reproducible and cheap to test (see [Testing](#testing)).
+
+### Evaluation pipeline
+
+The core flow — uploading resumes against a job and getting back ranked,
+explainable evaluations — crosses every layer above. `POST
+/jobs/{job_id}/candidates` drives it end to end, once per uploaded resume,
+before persisting:
+
+```mermaid
+sequenceDiagram
+    participant FE as React SPA
+    participant API as API router
+    participant SVC as Orchestration service
+    participant PDF as PDF parser
+    participant LLM as LLM provider (Gemini)
+    participant EMB as Embedding provider
+    participant DOM as Scoring engine (domain)
+    participant DB as Postgres
+
+    FE->>API: POST /jobs/{id}/candidates (resume PDFs)
+    API->>SVC: evaluate_resumes_for_job(job, resumes)
+    loop each resume
+        SVC->>PDF: parse_resume_pdf(bytes)
+        PDF-->>SVC: extracted text
+        SVC->>LLM: extract_resume(text)
+        LLM-->>SVC: structured ResumeExtraction (schema-validated)
+    end
+    SVC->>EMB: embed(job, candidates)
+    EMB-->>SVC: vectors
+    SVC->>DOM: match(job_profile, candidate)
+    DOM-->>SVC: MatchResult (5 weighted sub-scores, deterministic)
+    SVC->>LLM: evaluate_candidate(redacted candidate, job, MatchResult)
+    LLM-->>SVC: narrative (strengths, concerns, recommendation)
+    SVC->>DB: persist Evaluation (score + narrative)
+    SVC-->>API: evaluation_ids
+    API-->>FE: 200 OK
+```
+
+Two design points worth calling out for a reviewer:
+
+- **The score is never LLM output.** `MatchResult` is computed entirely by
+  the domain layer before the second LLM call happens; that call only
+  produces the qualitative narrative, grounded in the already-final score.
+  The LLM has no field in its response schema through which it could set
+  a score or fit level, even if a prompt injection tried to make it.
+- **Candidate identity is redacted before the narrative call** — `name`,
+  `email`, `phone`, and `location` are stripped from the payload sent to
+  the LLM (`evaluation_service._redact_candidate`), so the recommendation
+  is grounded only in qualifications.
+
+### Frontend structure
+
+The SPA is one route per page (`src/pages/`), composed from reusable
+presentational components (`src/components/`) that never call the API
+directly — a small `src/api/` axios layer owns all HTTP calls, and a
+single `useAsync` hook standardizes loading/error/data state so every page
+handles those three states the same way instead of reinventing them.
 
 ## Project structure
 
