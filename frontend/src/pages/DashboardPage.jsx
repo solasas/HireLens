@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { getDashboardStats } from "../api/dashboard";
+import { deleteEvaluation } from "../api/evaluations";
+import { getErrorMessage } from "../api/client";
 import { useAsync } from "../hooks/useAsync";
 import { Card } from "../components/common/Card";
 import { StatCard } from "../components/common/StatCard";
@@ -12,6 +15,23 @@ import styles from "./DashboardPage.module.css";
 
 export function DashboardPage() {
   const { data, error, isLoading, refetch } = useAsync(getDashboardStats, []);
+  const [confirmingId, setConfirmingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+
+  async function handleDelete(evaluationId) {
+    setDeletingId(evaluationId);
+    setDeleteError(null);
+    try {
+      await deleteEvaluation(evaluationId);
+      setConfirmingId(null);
+      refetch();
+    } catch (err) {
+      setDeleteError(getErrorMessage(err));
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <div>
@@ -73,25 +93,64 @@ export function DashboardPage() {
                 }
               />
             ) : (
-              <ul className={styles.recentList}>
-                {data.recent_evaluations.map((evaluation) => (
-                  <li key={evaluation.evaluation_id} className={styles.recentItem}>
-                    <Link
-                      to={`/jobs/${evaluation.job_id}/evaluations/${evaluation.evaluation_id}`}
-                      className={styles.recentLink}
-                    >
-                      <div>
-                        <span className={styles.candidateName}>{evaluation.candidate_name}</span>
-                        <span className={styles.jobTitle}> — {evaluation.job_title}</span>
+              <>
+                {deleteError && (
+                  <ErrorState message={deleteError} onRetry={() => handleDelete(confirmingId)} />
+                )}
+                <ul className={styles.recentList}>
+                  {data.recent_evaluations.map((evaluation) => (
+                    <li key={evaluation.evaluation_id} className={styles.recentItem}>
+                      <Link
+                        to={`/jobs/${evaluation.job_id}/evaluations/${evaluation.evaluation_id}`}
+                        className={styles.recentLink}
+                      >
+                        <div>
+                          <span className={styles.candidateName}>{evaluation.candidate_name}</span>
+                          <span className={styles.jobTitle}> — {evaluation.job_title}</span>
+                        </div>
+                        <div className={styles.recentMeta}>
+                          <span className={styles.recentScore}>{evaluation.score.toFixed(1)}</span>
+                          <FitBadge fitLevel={evaluation.fit_level} />
+                        </div>
+                      </Link>
+                      <div className={styles.recentActions}>
+                        {confirmingId === evaluation.evaluation_id ? (
+                          <>
+                            <span className={styles.confirmText}>Delete this evaluation?</span>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              disabled={deletingId === evaluation.evaluation_id}
+                              onClick={() => handleDelete(evaluation.evaluation_id)}
+                            >
+                              {deletingId === evaluation.evaluation_id ? "Deleting…" : "Confirm"}
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              disabled={deletingId === evaluation.evaluation_id}
+                              onClick={() => setConfirmingId(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => {
+                              setDeleteError(null);
+                              setConfirmingId(evaluation.evaluation_id);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        )}
                       </div>
-                      <div className={styles.recentMeta}>
-                        <span className={styles.recentScore}>{evaluation.score.toFixed(1)}</span>
-                        <FitBadge fitLevel={evaluation.fit_level} />
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </Card>
         </>

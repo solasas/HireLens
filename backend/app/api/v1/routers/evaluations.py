@@ -5,7 +5,7 @@ from fastapi import APIRouter, status
 
 from app.api.deps import DbSession
 from app.core.exceptions import NotFoundError
-from app.repositories.evaluation_repository import get_evaluation_detail
+from app.repositories.evaluation_repository import delete_evaluation, get_evaluation_detail
 from app.schemas.evaluation import EvaluationDetail, ScoreBreakdown
 
 logger = logging.getLogger(__name__)
@@ -43,3 +43,10 @@ async def get_evaluation_route(evaluation_id: uuid.UUID, db: DbSession) -> Evalu
         recommendation=explanation.get("recommendation", ""),
         created_at=row.created_at,
     )
+
+
+@router.delete("/{evaluation_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_evaluation_route(evaluation_id: uuid.UUID, db: DbSession) -> None:
+    deleted = await delete_evaluation(db, evaluation_id)
+    if not deleted:
+        raise NotFoundError(f"Evaluation {evaluation_id} was not found.")

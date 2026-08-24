@@ -62,6 +62,10 @@
 }
 
 .recentItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -74,11 +78,25 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  flex: 1;
+  min-width: 0;
   padding: 0.75rem 0.6rem;
   margin: 0 -0.6rem;
   border-radius: var(--radius-sm);
   text-decoration: none;
   color: inherit;
+}
+
+.recentActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.confirmText {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
 
 .recentLink:hover {

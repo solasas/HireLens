@@ -1,7 +1,7 @@
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.scoring import MatchResult
@@ -44,6 +44,12 @@ async def create_evaluation(
     session.add(row)
     await session.flush()
     return row
+
+
+async def delete_evaluation(session: AsyncSession, evaluation_id: uuid.UUID) -> bool:
+    """Returns True if a row was deleted, False if no evaluation had that id."""
+    result = await session.execute(delete(Evaluation).where(Evaluation.id == evaluation_id))
+    return result.rowcount > 0
 
 
 @dataclass(frozen=True)

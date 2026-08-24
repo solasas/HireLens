@@ -16,6 +16,11 @@
   opacity: 0.55;
 }
 
+.sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+
 .primary {
   background: var(--gradient-accent);
   color: #ffffff;
@@ -42,4 +47,15 @@
 .secondary:hover:not(:disabled) {
   background: var(--color-bg-alt);
   border-color: var(--color-accent-light);
+}
+
+.danger {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--color-danger);
+  color: #ffffff;
 }
